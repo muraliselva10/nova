@@ -901,9 +901,13 @@ class ComputeTaskManager:
             cyclient.delete_arqs_by_uuid(exc.arqs)
             raise
 
+
     def _schedule_instances(self, context, request_spec,
                             instance_uuids=None, return_alternates=False):
+        build_req = objects.BuildRequest.get_by_instance_uuid(context,instance_uuid=request_spec.instance_uuid)
+        instance_name = build_req.instance.display_name
         scheduler_utils.setup_instance_group(context, request_spec)
+        request_spec.flavor.extra_specs['instance_name'] = instance_name
         with timeutils.StopWatch() as timer:
             host_lists = self.query_client.select_destinations(
                 context, request_spec, instance_uuids, return_objects=True,
@@ -911,6 +915,7 @@ class ComputeTaskManager:
         LOG.debug('Took %0.2f seconds to select destinations for %s '
                   'instance(s).', timer.elapsed(), len(instance_uuids))
         return host_lists
+
 
     @staticmethod
     def _restrict_request_spec_to_cell(context, instance, request_spec):

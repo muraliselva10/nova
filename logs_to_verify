@@ -1,0 +1,47 @@
+# Changes for custom filter details
+
+## Changes in /etc/nova/nova.conf
+```
+[filter_scheduler]
+track_instance_changes = False
+available_filters = nova.scheduler.filters.all_filters
+enabled_filters = AvailabilityZoneFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter,SameHostFilter,
+DifferentHostFilter,CustomFilter
+```
+
+## VM provisioning succesful when VM Name length is less than cpu core.
+```
+Mar 08 10:18:40 alliswell nova-scheduler[19261]: DEBUG nova.scheduler.filters.name_core_comparsion_filter [None req-01986a24-bfbc-4314-b1ae-80721ea2438b demo demo] Obtained core details 4, 
+Obtained instance name test, Obtained instance_name length 4 {{(pid=19261) host_passes /opt/stack/nova/nova/scheduler/filters/name_core_comparsion_filter.py:16}}
+Mar 08 10:18:40 alliswell nova-scheduler[19261]: DEBUG nova.scheduler.filters.name_core_comparsion_filter [None req-01986a24-bfbc-4314-b1ae-80721ea2438b demo demo] Proceeding for VM 
+provisioning on host alliswell for VM test {{(pid=19261) host_passes /opt/stack/nova/nova/scheduler/filters/name_core_comparsion_filter.py:18}}
+Mar 08 10:18:40 alliswell nova-scheduler[19261]: DEBUG nova.filters [None req-01986a24-bfbc-4314-b1ae-80721ea2438b demo demo] Filter CustomFilter returned 
+1 host(s) {{(pid=19261) get_filtered_objects /opt/stack/nova/nova/filters.py:102}}
+```
+
+```
+stack@alliswell:~/nova/nova/scheduler/filters$ openstack server show e4d2254d-6ece-4e8a-bb13-52751c7701e3 | grep -E "vm_state|name"
+| OS-EXT-STS:vm_state         | active                                                          |
+| key_name                    | None                                                            |
+| name                        | test                                                            |
+| security_groups             | name='default'                                                  |
+stack@alliswell:~/nova/nova/scheduler/filters$
+```
+
+
+## VM provisioning failure when VM Name length is more than cpu core.
+```
+Mar 08 10:20:49 alliswell nova-scheduler[19262]: DEBUG nova.scheduler.filters.name_core_comparsion_filter [None req-d721412d-4017-4609-bf9b-b83a51004499 demo demo] Obtained core 
+details 4, Obtained instance name test_vm_long, Obtained instance_name lenght 12 {{(pid=19262) host_passes /opt/stack/nova/nova/scheduler/filters/name_core_comparsion_filter.py:16}}
+Mar 08 10:20:49 alliswell nova-scheduler[19262]: DEBUG nova.scheduler.filters.name_core_comparsion_filter [None req-d721412d-4017-4609-bf9b-b83a51004499 demo demo] Not Proceeding
+for VM provisioning on host alliswell for VM test_vm_long {{(pid=19262) host_passes /opt/stack/nova/nova/scheduler/filters/name_core_comparsion_filter.py:21}}
+Mar 08 10:20:49 alliswell nova-scheduler[19262]: INFO nova.filters [None req-d721412d-4017-4609-bf9b-b83a51004499 demo demo] Filter CustomFilter returned 0 hosts
+```
+
+```
+stack@alliswell:~/nova-filter-example$ openstack server show 96590ac0-ac1f-4ef6-8c2f-c434bdf523c0 | grep -E 'name|fault'
+| fault                       | {'code': 500, 'created': '2022-03-08T10:05:12Z', 'message': 'No valid host was found. There are not enough hosts available.'} |
+| key_name                    | None                                                                                                                          |
+| name                        | test_vm_new                                                                                                                   |
+stack@alliswell:~/nova-filter-example$
+```
